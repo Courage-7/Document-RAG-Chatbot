@@ -1,16 +1,23 @@
+import os
 import together
+from dotenv import load_dotenv
+from app.vectorstore.supabase_store import retrieve_chunks
 
-from app.config.settings import TOGETHER_API_KEY
-from app.rag.retriever import retrieve_chunks
 
+#load the variables from your .env file
+load_dotenv()
+
+#Get the key directly
+TOGETHER_API_KEY = os.getenv("Together_API_KEY")
 together.api_key = TOGETHER_API_KEY
 
+
 def ask_chatbot(question):
-    retrieved_docs = retrieve_chunks(question)
+    retrieved_docx = retrieve_chunks(question)
 
     context = ""
 
-    for doc in retrieved_docs:
+    for doc in retrieved_docx:
         context += doc["content"] + "\n"
 
     prompt = f"""

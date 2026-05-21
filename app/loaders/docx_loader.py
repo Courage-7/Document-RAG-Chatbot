@@ -1,6 +1,6 @@
 from docx import Document
 
-def load_docx(file_path):
+def docx_loader(file_path):
     doc = Document(file_path)
 
     text = ""
