@@ -31,7 +31,7 @@ uv sync
 ## Run App
 
 ```bash
-streamlit run app/ui/streamlit_app.py
+python -m streamlit run app/UI/streamlit_app.py
 ```
 
 ## Folder Structure

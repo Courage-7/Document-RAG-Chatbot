@@ -1,43 +1,73 @@
-import streamlit as st
 import os
 from supabase import create_client
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
-from app.config.settings import (SUPABASE_KEY, SUPABASE_URL)
-
+from openai import OpenAI
 
 load_dotenv()
-supabase_client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
-@st.cache_resource
-def load_model():
-    return SentenceTransformer("all-MiniLM-L6-v2")
+# =========================
+# Supabase Client
+# =========================
+supabase_client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_KEY")
+)
 
+# =========================
+# OpenAI Client
+# =========================
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
+# =========================
+# Embeddings
+# =========================
 def get_embedding(texts):
-    model = load_model()
     if isinstance(texts, str):
         texts = [texts]
-        return model.encode(texts, normalize_embeddings=True).tolist()
-def retrieve_chunks(question):
+
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=texts
+    )
+
+    return [item.embedding for item in response.data]
+
+
+# =========================
+# Retrieve (Vector Search)
+# =========================
+def retrieve_chunks(question, top_k=5):
+
     question_embedding = get_embedding(question)[0]
+
     response = supabase_client.rpc(
         "match_documents",
         {
-            "query_embedding":
-                question_embedding,
-                "match_threshold":
-                    0.5,
-                    "match_count":
-                        5
+            "query_embedding": question_embedding,
+            "match_count": top_k
         }
     ).execute()
-    return response.data  
-def store_embeddings(chunks, embeddings):
+
+    return response.data
+
+
+# =========================
+# Store Embeddings
+# =========================
+def store_embeddings(chunks, embeddings, filename=None):
+
     data = []
+
     for chunk, embedding in zip(chunks, embeddings):
+
         data.append({
             "content": chunk,
-            "embedding": embedding
+            "embedding": embedding,
+            "metadata": {
+                "filename": filename
+            }
         })
 
-    supabase_client.table("documents").insert(data).execute()  
+    supabase_client.table("documents").insert(data).execute()

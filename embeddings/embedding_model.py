@@ -7,7 +7,4 @@ def load_model():
 
 def get_embedding(texts):
     model = load_model()
-    if isinstance(texts, str):
-        texts = [texts]
-    embeddings = model.encode(texts, show_progress_bar=True)
-    return embeddings.tolist()
+    return model.encode(texts).tolist()
