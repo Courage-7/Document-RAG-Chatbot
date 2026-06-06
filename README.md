@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Document RAG Chatbot
 
 A beginner-friendly Retrieval-Augmented Generation (RAG) chatbot built with Python, Streamlit, Together AI, and Supabase.
@@ -43,3 +44,7 @@ app/
 ## Author
 
 Israel
+=======
+# Document-Rag-Chatbot
+Rag Chatbot using langchain,Openai,supabase
+>>>>>>> e15caf473c040dab64c67a77da779bf6b1d5f0f1
