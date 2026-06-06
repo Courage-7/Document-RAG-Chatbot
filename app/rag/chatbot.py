@@ -1,42 +1,46 @@
-import os
-import together
-from dotenv import load_dotenv
+from openai import OpenAI
+
+from app.config.settings import (
+    DEFAULT_GROQ_MODEL,
+    GROQ_BASE_URL,
+    get_setting,
+)
 from app.vectorstore.supabase_store import retrieve_chunks
 
 
-#load the variables from your .env file
-load_dotenv()
+def get_groq_client(api_key: str | None = None) -> OpenAI:
+    resolved_api_key = api_key or get_setting("GROQ_API_KEY")
 
-#Get the key directly
-TOGETHER_API_KEY = os.getenv("Together_API_KEY")
-together.api_key = TOGETHER_API_KEY
+    if not resolved_api_key:
+        raise ValueError("Missing GROQ_API_KEY.")
 
-
-def ask_chatbot(question):
-    retrieved_docx = retrieve_chunks(question)
-
-    context = ""
-
-    for doc in retrieved_docx:
-        context += doc["content"] + "\n"
-
-    prompt = f"""
-    Answer ONLY from the provided context.
-
-    Context:
-    {context}
-
-    Question:
-    {question}
-
-    If the answer is not in the context, say:
-    "I could not find the answer in the uploaded document."
-    """
-
-    response = together.Complete.create(
-        prompt=prompt,
-        model="mistralai/Mistral-7B-Instruct-v0.1",
-        max_tokens=300
+    return OpenAI(
+        api_key=resolved_api_key,
+        base_url=GROQ_BASE_URL,
     )
 
-    return response["output"]["choices"][0]["text"]
+
+def ask_chatbot(question, top_k=5, model=DEFAULT_GROQ_MODEL):
+    retrieved_docs = retrieve_chunks(question, top_k=top_k)
+    context = "\n".join(doc["content"] for doc in retrieved_docs)
+
+    response = get_groq_client().chat.completions.create(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Answer ONLY from the provided context. "
+                    "If the answer is not in the context, say: "
+                    "I could not find the answer in the uploaded document."
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"Context:\n{context}\n\nQuestion:\n{question}",
+            },
+        ],
+        temperature=0.2,
+    )
+
+    return response.choices[0].message.content

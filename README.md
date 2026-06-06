@@ -1,27 +1,27 @@
-<<<<<<< HEAD
 # Document RAG Chatbot
 
-A beginner-friendly Retrieval-Augmented Generation (RAG) chatbot built with Python, Streamlit, Together AI, and Supabase.
+A Retrieval-Augmented Generation (RAG) chatbot built with Python, Streamlit, Groq, OpenRouter-hosted Gemini embeddings, and Supabase vector search.
 
 ## Features
 
-- Upload PDF documents
-- Upload Word documents
-- Upload Images
-- OCR support
+- Upload PDF, Word, and text documents
+- Split uploaded documents into retrievable chunks
+- Store embeddings in Supabase
 - Ask questions about uploaded documents
-- Accurate retrieval using embeddings
-- Vector search with Supabase
-- Beginner-friendly architecture
+- Generate answers with Groq chat models
+- Enter required credentials from the Streamlit settings section
+- Optionally save credentials to a local `.env` file
 
-## Tech Stack
+## Required Credentials
 
-- Python
-- Streamlit
-- Together AI
-- Supabase
-- LangChain
-- Sentence Transformers
+The Streamlit settings section requests these values:
+
+- `GROQ_API_KEY` for chat completions
+- `OPENROUTER_API_KEY` for Gemini embeddings through OpenRouter
+- `SUPABASE_URL` for the Supabase project URL
+- `SUPABASE_KEY` for the Supabase API key
+
+Credentials entered in the UI are applied to the current Streamlit session. Select `Save to .env` in settings to persist them locally. The `.env` file is ignored by git.
 
 ## Installation
 
@@ -32,19 +32,18 @@ uv sync
 ## Run App
 
 ```bash
-python -m streamlit run app/UI/streamlit_app.py
+python -m streamlit run app/UI/Streamlit_app.py
 ```
 
-## Folder Structure
+## Tech Stack
 
-```txt
-app/
-```
+- Python
+- Streamlit
+- Groq
+- OpenRouter
+- Supabase
+- LangChain
 
 ## Author
 
 Israel
-=======
-# Document-Rag-Chatbot
-Rag Chatbot using langchain,Openai,supabase
->>>>>>> e15caf473c040dab64c67a77da779bf6b1d5f0f1
