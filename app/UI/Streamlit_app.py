@@ -5,31 +5,20 @@ from datetime import datetime
 from dotenv import load_dotenv
 from supabase import create_client
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import (
-    PyPDFLoader,
-    Docx2txtLoader,
-    TextLoader
-)
+from langchain_community.document_loaders import (PyPDFLoader,Docx2txtLoader,TextLoader)
 from openai import OpenAI
-
 from embeddings.embedding_model import get_embedding
 
-# =========================
+
 # Load Environment Variables
-# =========================
 load_dotenv()
 
-# =========================
-# Streamlit Config
-# =========================
-st.set_page_config(
-    page_title="RAG Chatbot",
-    layout="wide"
-)
 
-# =========================
+# Streamlit Config
+st.set_page_config(page_title="RAG Chatbot",layout="wide")
+
+
 # Custom CSS
-# =========================
 st.markdown("""
 <style>
 .user-msg {
@@ -52,16 +41,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
+
 # Environment Variables
-# =========================
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# =========================
+
 # Validate Keys
-# =========================
 if not SUPABASE_URL or not SUPABASE_KEY:
     st.error("Missing SUPABASE_URL or SUPABASE_KEY in .env")
     st.stop()
@@ -69,47 +56,46 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 if not OPENAI_API_KEY:
     st.error("Missing OPENAI_API_KEY in .env")
     st.stop()
-
-# =========================
-# Initialize Clients
-# =========================
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    
+if "supabase_client" not in st.session_state:
+    try:
+        st.session_state.supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        st.error(f"Failed to create supabase client:{e}")
+        st.stop()
+supabase = st.session_state.supabase_client
 
 client = OpenAI(
     api_key=OPENAI_API_KEY
 )
 
-# =========================
+
 # Text Splitter
-# =========================
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=200
 )
 
-# =========================
+
 # Session State
-# =========================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "doc_info" not in st.session_state:
     st.session_state.doc_info = None
 
-# =========================
-# Sidebar
-# =========================
-with st.sidebar:
 
+# Sidebar
+with st.sidebar:
     st.markdown("## Upload Document")
 
-    uploaded_file = st.file_uploader(
+uploaded_file = st.file_uploader(
         "Upload",
         type=["pdf", "docx", "txt"],
         label_visibility="collapsed"
     )
 
-    if uploaded_file and st.session_state.doc_info is None:
+if uploaded_file and st.session_state.doc_info is None:
 
         if st.button(
             "Process and Save to Supabase",
@@ -120,9 +106,7 @@ with st.sidebar:
             with st.spinner("Processing document..."):
 
                 try:
-                    # =========================
                     # Save Temp File
-                    # =========================
                     suffix = os.path.splitext(uploaded_file.name)[1]
 
                     with tempfile.NamedTemporaryFile(
@@ -133,9 +117,7 @@ with st.sidebar:
                         tmp.write(uploaded_file.getvalue())
                         tmp_path = tmp.name
 
-                    # =========================
                     # Load Document
-                    # =========================
                     if suffix == ".pdf":
                         loader = PyPDFLoader(tmp_path)
 
@@ -150,30 +132,24 @@ with st.sidebar:
                     # Delete temp file
                     os.unlink(tmp_path)
 
-                    # =========================
                     # Extract Text
-                    # =========================
                     full_text = "\n".join(
                         [doc.page_content for doc in docs]
                     )
 
-                    # =========================
+                    
                     # Create Chunks
-                    # =========================
                     chunks = text_splitter.split_text(full_text)
 
                     if not chunks:
                         st.error("No text chunks were created.")
                         st.stop()
 
-                    # =========================
-                    # Generate Embeddings
-                    # =========================
+                    
+                    # Generate Embedding
                     embeddings = get_embedding(chunks)
 
-                    # =========================
                     # Prepare Data
-                    # =========================
                     data = []
 
                     for chunk, embedding in zip(chunks, embeddings):
@@ -190,14 +166,11 @@ with st.sidebar:
                             }
                         })
 
-                    # =========================
+                    
                     # Insert into Supabase
-                    # =========================
-                    supabase.table("documents").insert(data).execute()
-
-                    # =========================
+                    supabase.table("documnets").insert(data).execute()
+                    
                     # Save Document Info
-                    # =========================
                     st.session_state.doc_info = {
                         "filename": uploaded_file.name,
                         "pages": len(docs),
@@ -208,16 +181,13 @@ with st.sidebar:
                     }
 
                     st.success("Document processed successfully!")
-
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
 
-    # =========================
     # Document Info
-    # =========================
-    if st.session_state.doc_info:
-
-        st.markdown("## Document Info")
+        if st.session_state.doc_info:
+            st.markdown("## Document Info")
+            
 
         st.write(
             f"Filename: {st.session_state.doc_info['filename']}"
@@ -235,19 +205,18 @@ with st.sidebar:
             f"Uploaded: {st.session_state.doc_info['uploaded_at']}"
         )
 
-    # =========================
-    # Settings
-    # =========================
-    st.markdown("## Settings")
+   
+# Settings
+st.markdown("## Settings")
 
-    top_k = st.slider(
+top_k = st.slider(
         "Top K Chunks",
         1,
         10,
         5
     )
 
-    model = st.selectbox(
+model = st.selectbox(
         "Model",
         [
             "gpt-4o-mini",
@@ -256,23 +225,21 @@ with st.sidebar:
         ]
     )
 
-    show_sources = st.toggle(
-        "Show Sources",
-        value=True
-    )
+show_sources = st.toggle(
+    "Show Sources",
+    value=True
+)
 
-# =========================
 # Main Header
-# =========================
+
 st.markdown("# EAZI'S RAG Chatbot")
 
 st.caption(
     "Upload a document and ask questions about it."
 )
 
-# =========================
+
 # Clear Chat
-# =========================
 top_col1, top_col2 = st.columns([6, 1])
 
 with top_col2:
@@ -280,9 +247,8 @@ with top_col2:
         st.session_state.messages = []
         st.rerun()
 
-# =========================
+
 # Display Chat History
-# =========================
 for msg in st.session_state.messages:
 
     if msg["role"] == "user":
@@ -314,9 +280,8 @@ for msg in st.session_state.messages:
 
             st.caption(msg["time"])
 
-# =========================
+
 # Chat Input
-# =========================
 if prompt := st.chat_input(
     "Ask a question about your document..."
 ):
@@ -341,17 +306,13 @@ if prompt := st.chat_input(
         with st.spinner("Searching document..."):
 
             try:
-                # =========================
                 # Query Embedding
-                # =========================
                 query_embedding = get_embedding([prompt])[0]
 
                 if hasattr(query_embedding, "tolist"):
                     query_embedding = query_embedding.tolist()
 
-                # =========================
                 # Search Supabase
-                # =========================
                 result = supabase.rpc(
                     "match_documents",
                     {
@@ -365,9 +326,7 @@ if prompt := st.chat_input(
                     sources = []
 
                 else:
-                    # =========================
                     # Build Context
-                    # =========================
                     context = "\n\n".join([
                         r["content"]
                         for r in result.data
@@ -377,10 +336,7 @@ if prompt := st.chat_input(
                         r["metadata"]["filename"]
                         for r in result.data
                     ]
-
-                    # =========================
                     # OpenAI Response
-                    # =========================
                     response = client.chat.completions.create(
                         model=model,
                         messages=[
@@ -407,10 +363,7 @@ if prompt := st.chat_input(
             except Exception as e:
                 answer = f"Error: {str(e)}"
                 sources = []
-
-        # =========================
         # Save Assistant Message
-        # =========================
         st.session_state.messages.append({
             "role": "assistant",
             "content": answer,
@@ -420,9 +373,7 @@ if prompt := st.chat_input(
 
         st.rerun()
 
-# =========================
 # Footer
-# =========================
 st.divider()
 
 st.caption(
