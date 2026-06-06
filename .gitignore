@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 __pycache__/
 .env
+.env.*
 venv/
 data/uploads/
 =======
