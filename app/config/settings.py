@@ -15,7 +15,6 @@ REQUIRED_ENV_VARS = (
     "SUPABASE_KEY",
 )
 
-GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 GROQ_MODELS = (
@@ -24,8 +23,9 @@ GROQ_MODELS = (
     "llama-3.3-70b-specdec",
 )
 
-OPENROUTER_EMBEDDING_MODEL = "google/gemini-embedding-2-preview"
+OPENROUTER_EMBEDDING_MODEL = "google/gemini-embedding-001"
 OPENROUTER_EMBEDDING_DIMENSIONS = 1536
+OPENROUTER_CHAT_MODEL = "google/gemini-2.5-flash"
 
 
 load_dotenv(ENV_FILE)
